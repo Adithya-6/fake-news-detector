@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+
+# Ignore all pickle files EXCEPT those inside app/model/
+*.pkl
+!app/model/*.pkl
+
+*.log
+.env
+venv/
