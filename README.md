@@ -25,26 +25,6 @@ A **Streamlit-powered web app** that detects whether a news headline or article 
 
 ---
 
-## 📂 Project Structure
-
-fake-news-detector/
-│
-├── app/
-│ ├── app.py # Streamlit UI
-│ ├── model/ # Pickled model + vectorizer
-│ └── utils.py # Prediction logic
-│
-├── data/
-│ ├── Fake.csv
-│ └── True.csv
-│
-├── fetch_and_update.py # Script for retraining with live news
-├── model_update_log.txt # Logs of auto-retraining
-├── requirements.txt # All dependencies
-├── README.md
-└── .gitignore
-
-
 ## 🧪 Run Locally
 
 ```bash
