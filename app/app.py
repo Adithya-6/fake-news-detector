@@ -1,4 +1,7 @@
 # app/app.py
+# Run from the repo root:  streamlit run app/app.py
+
+import html
 
 import streamlit as st
 from utils import predict_news
@@ -6,20 +9,14 @@ from utils import predict_news
 st.set_page_config(page_title="🧠 Fake News Detector", layout="wide")
 
 # -------------- Custom CSS --------------
+# FIX: removed `.stTextArea textarea { background-color: var(--text-color) }`
+# (it painted the textarea in the *text* colour, making typed text unreadable)
+# and `.main { background-color: var(--background-color) }` (undefined variable).
+# Streamlit already themes both for light/dark mode.
 st.markdown("""
     <style>
-    .main {
-        background-color: var(--background-color);
-    }
-    .stTextArea textarea {
-        background-color: var(--text-color);
-        border-radius: 0.5rem !important;
-    }
-    .title {
-        font-size: 2.8rem;
-        font-weight: bold;
-        color: var(--text-color);
-    }
+    .stTextArea textarea { border-radius: 0.5rem !important; }
+    .title { font-size: 2.8rem; font-weight: bold; }
     .confidence-bar {
         height: 20px;
         border-radius: 10px;
@@ -36,10 +33,12 @@ st.markdown("""
     }
     .input-preview {
         background-color: #f2f2f2;
+        color: #222222;
         padding: 15px;
         border-left: 5px solid #0099ff;
         border-radius: 6px;
         margin-bottom: 15px;
+        white-space: pre-wrap;
     }
     @media (prefers-color-scheme: dark) {
         .input-preview {
@@ -71,11 +70,19 @@ with col2:
         elif len(user_input.split()) < 5:
             st.warning("⚠️ Please enter more detailed news content (at least 5 words).")
         else:
-            label, confidence = predict_news(user_input)
+            try:
+                label, confidence = predict_news(user_input)
+            except FileNotFoundError as exc:  # model.pkl not trained yet
+                st.error(str(exc))
+                st.stop()
 
-            # Display input
+            # FIX (XSS): user text was injected into raw HTML with
+            # unsafe_allow_html=True. Escape it first.
             st.markdown("#### 📝 Your Input:")
-            st.markdown(f"<div class='input-preview'>{user_input}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div class='input-preview'>{html.escape(user_input)}</div>",
+                unsafe_allow_html=True,
+            )
 
             # Result
             label_color = "#28a745" if label == "REAL" else "#dc3545"
@@ -86,12 +93,12 @@ with col2:
                 </h4>
             """, unsafe_allow_html=True)
 
-            # Confidence Bar
-            confidence_percent = f"{confidence * 100:.2f}%"
+            # Confidence bar
+            pct = confidence * 100
             st.markdown(f"""
                 <div class="confidence-bar">
-                    <div class="confidence-fill" style="width:{confidence*100}%; background-color:{label_color}">
-                        {confidence_percent} confident
+                    <div class="confidence-fill" style="width:{pct:.2f}%; background-color:{label_color}">
+                        {pct:.2f}% confident
                     </div>
                 </div>
             """, unsafe_allow_html=True)
@@ -99,6 +106,11 @@ with col2:
             # Uncertainty warning
             if confidence < 0.65:
                 st.warning("🤔 The model is unsure. Please verify this news with trusted sources.")
+
+            st.caption(
+                "This model recognises the writing style of its training data, "
+                "not factual truth. Always verify important claims independently."
+            )
 
 # -------------- Footer --------------
 st.markdown("""
