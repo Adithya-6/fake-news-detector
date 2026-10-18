@@ -26,6 +26,10 @@ from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 
+# Shared with the Streamlit app so training and inference clean text identically
+# (also strips the 'CITY (Reuters) -' prefix that otherwise leaks the label).
+from app.utils import clean_text
+
 # ---- Paths are resolved relative to this file, so it works from any cwd ----
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
@@ -37,22 +41,6 @@ LOG_PATH = BASE_DIR / "model_update_log.txt"
 API_KEY = os.getenv("NEWSAPI_KEY", "")
 
 MAX_PER_CLASS = 10_000  # cap per class to keep classes balanced and training fast
-
-# FIX 2: True.csv articles start with "CITY (Reuters) - ...". After punctuation
-# is stripped that becomes the token "reuters", which the model learns as a
-# shortcut for "real" (and fails on NewsAPI / user input). Remove the prefix.
-REUTERS_PREFIX = re.compile(r"^.{0,120}?\(reuters\)\s*-?\s*", re.IGNORECASE)
-
-
-def clean_text(text):
-    """Lowercase, strip URLs / @mentions / hashtags / punctuation."""
-    text = "" if text is None else str(text)
-    text = REUTERS_PREFIX.sub("", text)
-    text = re.sub(r"http\S+|www\S+", "", text)  # URLs (https\S+ was redundant)
-    text = re.sub(r"@\w+|#", "", text)          # mentions and hashtag symbols
-    text = re.sub(r"[^A-Za-z0-9\s]+", "", text) # punctuation / symbols
-    return text.lower().strip()
-
 
 def fetch_real_news():
     """Fetch current English headlines from NewsAPI; label them real (1)."""
